@@ -21,6 +21,7 @@ function MenuItemDetails() {
     error,
     refetch,
   } = useGetMenuItemByIdQuery(itemId);
+
   const handleAddToCart = () => {
     dispatch(
       addToCart({
@@ -74,7 +75,24 @@ function MenuItemDetails() {
       </div>
     );
   }
+  //my code
+  const productUrl = `${window.location.origin}${ROUTES.MENU_DETAIL.replace(
+    ":id",
+    selectedMenuItem.id
+  )}`;
 
+  const shareText = encodeURIComponent(
+    `Check out this product:\n${selectedMenuItem.name}\nPrice: $${selectedMenuItem.price}\n`
+  );
+
+  const whatsappShareUrl = `https://wa.me/?text=${shareText}${encodeURIComponent(
+    productUrl
+  )}`;
+
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+    productUrl
+  )}`;
+  //my code ends
   return (
     <>
       <div className="container py-4">
@@ -149,6 +167,50 @@ function MenuItemDetails() {
                     <div className="h2 text-primary fw-bold mb-0">
                       ${selectedMenuItem.price.toFixed(2)}
                     </div>
+                    {/* my code */}
+                    {/* Share Buttons */}
+                    <div className="mt-3 d-flex align-items-center gap-2">
+                      <span className="text-muted small fw-semibold">
+                        Share:
+                      </span>
+
+                      {/* WhatsApp */}
+                      <a
+                        href={whatsappShareUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success btn-sm rounded-circle"
+                        title="Share on WhatsApp"
+                      >
+                        <i className="bi bi-whatsapp"></i>
+                      </a>
+
+                      {/* Facebook */}
+                      <a
+                        href={facebookShareUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm rounded-circle"
+                        title="Share on Facebook"
+                      >
+                        <i className="bi bi-facebook"></i>
+                      </a>
+
+                      {/* Instagram (Copy link) */}
+                      <button
+                        className="btn btn-danger btn-sm rounded-circle"
+                        title="Copy link for Instagram"
+                        onClick={() => {
+                          navigator.clipboard.writeText(productUrl);
+                          toast.success(
+                            "Product link copied! Paste it on Instagram 📸"
+                          );
+                        }}
+                      >
+                        <i className="bi bi-instagram"></i>
+                      </button>
+                    </div>
+                    {/* my code ends */}
                   </div>
                 </div>
                 {selectedMenuItem.rating > 0 && (

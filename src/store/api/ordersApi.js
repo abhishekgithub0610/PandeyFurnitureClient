@@ -9,12 +9,21 @@ export const ordersApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Order"],
       transformResponse: (response) => {
+        console.log("API RESPONSE:");
+        console.log("API RESPONSE:", response);
+
+        //myfix
         if (response && response.result && Array.isArray(response.result)) {
           return response.result;
         }
         if (response && Array.isArray(response)) {
           return response;
         }
+        // if (response?.isSuccess && Array.isArray(response?.result)) {
+        //   return response.result;
+        // }
+        //myfix ends
+
         return [];
       },
     }),
@@ -22,12 +31,15 @@ export const ordersApi = baseApi.injectEndpoints({
     getOrderById: builder.query({
       query: (id) => `/OrderHeader/${id}`,
       providesTags: (result, error, { id }) => [{ type: "Order", id }],
+      //myfix
       transformResponse: (response) => {
         if (response && response.result) {
           return response.result;
         }
         return response;
       },
+      //transformResponse: (response) => response?.result ?? null,
+      //myfix ends
     }),
 
     createOrder: builder.mutation({

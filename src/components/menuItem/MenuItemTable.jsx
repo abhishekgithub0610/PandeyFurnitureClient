@@ -41,6 +41,7 @@ function MenuItemTable({ menuItems, isLoading, error, onDelete, onEdit }) {
               <th>Name</th>
               <th>Category</th>
               <th>Price</th>
+              <th>Quantity</th>
               <th>Special Tag</th>
               <th>Actions</th>
             </tr>
@@ -72,6 +73,9 @@ function MenuItemTable({ menuItems, isLoading, error, onDelete, onEdit }) {
                 </td>
                 <td>
                   <strong>${item.price.toFixed(2)}</strong>
+                </td>
+                <td>
+                  <strong>{item.quantity}</strong>
                 </td>
                 <td>
                   <span className="badge bg-warning ">{item.specialTag}</span>

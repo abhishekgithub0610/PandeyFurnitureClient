@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/auth/Login";
+import NotFound from "../pages/auth/NotFound";
 import OrderManagement from "../pages/order/OrderManagement";
 import MenuItemManagement from "../pages/menu/MenuItemManagement";
 import Cart from "../pages/cart/Cart";
@@ -44,6 +45,7 @@ const AppRoutes = () => (
     />
     <Route path={ROUTES.CHECKOUT} element={<Checkout />} />
     <Route path={ROUTES.ORDER_CONFIRMATION} element={<OrderConfirmation />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 export default AppRoutes;

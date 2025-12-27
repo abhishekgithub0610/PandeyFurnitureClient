@@ -29,6 +29,18 @@ function Home() {
     );
     toast.success(`${item.name} added to cart!`);
   };
+  const handleNotify = (id) => {
+    // dispatch(
+    //   addToCart({
+    //     id: item.id,
+    //     name: item.name,
+    //     price: item.price,
+    //     image: item.image,
+    //     quantity: 1,
+    //   })
+    // );
+    toast.success(`will notify you when the item is back in stock!`);
+  };
 
   const filteredItems = menuItems.filter((item) => {
     //myfix
@@ -136,11 +148,19 @@ function Home() {
                           height: "220px",
                           objectFit: "cover",
                           transition: "transform 0.3s ease",
+                          opacity: item.quantity < 1 ? 0.6 : 1,
                         }}
                         onError={(e) => {
                           e.target.src = "https://placehold.co/100";
                         }}
                       />
+                      {/* {item.quantity < 1 && (
+                        <div className="position-absolute top-50 start-50 translate-middle">
+                          <span className="badge bg-danger px-3 py-2 fs-6 shadow">
+                            Out of Stock
+                          </span>
+                        </div>
+                      )} */}
 
                       {item.specialTag && (
                         <div className="position-absolute top-0 end-0 m-3">
@@ -198,12 +218,30 @@ function Home() {
                             </Link>
                           </div>
                           <div className="col-6">
-                            <button
-                              className="btn btn-primary w-100 btn-sm fw-semibold"
-                              onClick={() => handleAddToCart(item)}
-                            >
-                              <i className="bi bi-cart-plus me-1"></i>Add Cart
-                            </button>
+                            {item.quantity < 1 ? (
+                              <div className="d-flex flex-column gap-1">
+                                <button
+                                  className="btn btn-secondary w-100 btn-sm fw-semibold"
+                                  disabled
+                                >
+                                  Out of Stock
+                                </button>
+
+                                <button
+                                  className="btn btn-link btn-sm text-decoration-none text-primary p-0"
+                                  onClick={() => handleNotify(item.id)}
+                                >
+                                  🔔 Notify me when available
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="btn btn-primary w-100 btn-sm fw-semibold"
+                                onClick={() => handleAddToCart(item)}
+                              >
+                                Add Cart
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -226,9 +264,9 @@ function Home() {
         {/* Features Section */}
         <section className="py-5 border-top">
           <div className="text-center mb-5">
-            <h2 className="fw-bold">Why Choose MangoFusion?</h2>
+            <h2 className="fw-bold">Why Choose PandeyFurniture?</h2>
             <p className="text-muted mb-0">
-              We deliver freshness, flavor, and a premium ordering experience.
+              “Quality furniture. Crafted for comfort.”{" "}
             </p>
           </div>
           <div className="row g-4">
@@ -239,10 +277,9 @@ function Home() {
                     className="bi bi-egg-fried text-primary"
                     style={{ fontSize: "2.5rem" }}
                   ></i>
-                  <h5 className="mt-3">Quality Food</h5>
+                  <h5 className="mt-3">Quality Furnitures</h5>
                   <p className="text-muted small mb-0">
-                    Fresh ingredients and authentic recipes for exceptional
-                    taste.
+                    Quality material for exceptional products.
                   </p>
                 </div>
               </div>

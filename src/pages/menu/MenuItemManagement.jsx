@@ -32,6 +32,7 @@ function MenuManagement() {
     category: "",
     price: "",
     image: null,
+    quantity: "",
   });
 
   const resetForm = () => {
@@ -42,6 +43,7 @@ function MenuManagement() {
       category: "",
       price: "",
       image: null,
+      quantity: "",
     });
   };
 
@@ -80,6 +82,7 @@ function MenuManagement() {
       category: item.category || "",
       price: item.price || "",
       image: null,
+      quantity: item.quantity || "",
     });
     setShowModal(true);
   };
@@ -94,6 +97,7 @@ function MenuManagement() {
       formDataToSend.append("Description", formData.description);
       formDataToSend.append("Price", formData.price);
       formDataToSend.append("SpecialTag", formData.specialTag);
+      formDataToSend.append("Quantity", formData.quantity);
       if (formData.image) {
         formDataToSend.append("File", formData.image);
       }

@@ -15,12 +15,21 @@ function OrderManagement() {
   if (!isAdmin && user) {
     userId = user.id;
   }
+  //myfix
+  // const {
+  //   data: orders = [],
+  //   isLoading,
+  //   error,
+  //   refetch,
+  // } = useGetOrdersQuery(userId, { refetchOnMountOrArgChange: true });
   const {
     data: orders = [],
     isLoading,
     error,
     refetch,
-  } = useGetOrdersQuery(userId, { refetchOnMountOrArgChange: true });
+  } = useGetOrdersQuery(userId);
+  //myfix ends
+
   const [updateOrder] = useUpdateOrderMutation();
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +59,9 @@ function OrderManagement() {
       });
       if (result.isSuccess !== false) {
         toast.success("Order updated successfully!");
-        refetch();
+        //myfix
+        //refetch();
+        //myfix ends
       } else {
         toast.error("Failed to update order.");
       }

@@ -47,19 +47,20 @@ export const menuItemsApi = baseApi.injectEndpoints({
 
     updateMenuItem: builder.mutation({
       query: ({ id, formData }) => ({
-        url: `/MenuItem?id=${id}`,
+        //url: `/MenuItem?id=${id}`,
+        url: `/MenuItem/${id}`,
         method: "PUT",
         body: formData,
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "MenuItem", id }],
     }),
-   }),
- });
+  }),
+});
 
 export const {
-   useGetMenuItemsQuery,
-   useCreateMenuItemMutation,
-   useDeleteMenuItemMutation,
-   useUpdateMenuItemMutation,
-   useGetMenuItemByIdQuery,
+  useGetMenuItemsQuery,
+  useCreateMenuItemMutation,
+  useDeleteMenuItemMutation,
+  useUpdateMenuItemMutation,
+  useGetMenuItemByIdQuery,
 } = menuItemsApi;

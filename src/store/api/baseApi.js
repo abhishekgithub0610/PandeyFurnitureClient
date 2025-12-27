@@ -15,13 +15,15 @@ const baseQuery = fetchBaseQuery({
 
 const baseQueryWithAuth = async (args, _api, extraOptions) => {
   const result = await baseQuery(args, _api, extraOptions);
-
   return result;
 };
 
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithAuth,
+  //myfix
   tagTypes: [],
+  //tagTypes: ["Order", "MenuItem"],
+  //myfix ends
   endpoints: () => ({}), // Endpoints defined in individual API files
 });

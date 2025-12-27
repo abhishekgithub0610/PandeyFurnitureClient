@@ -113,7 +113,7 @@ function MenuItemModal({
                 </div>
 
                 <div className="row">
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="mb-3">
                       <label className="form-label">Price * ($)</label>
                       <input
@@ -127,7 +127,21 @@ function MenuItemModal({
                       />
                     </div>
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-3">
+                    <div className="mb-3">
+                      <label className="form-label">Quantity *</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="quantity"
+                        step="1"
+                        min="1"
+                        value={formData.quantity || ""}
+                        onChange={onChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-5">
                     <div className="mb-3">
                       <label className="form-label">Special Tag</label>
                       <select
