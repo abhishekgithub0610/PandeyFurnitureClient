@@ -11,6 +11,7 @@ export const ROUTES = {
 };
 
 export const API_BASE_URL = "https://localhost:7188";
+export const DESCRIPTION_LIMIT = 100;
 
 export const CATEGORY = [
   "Living Room",

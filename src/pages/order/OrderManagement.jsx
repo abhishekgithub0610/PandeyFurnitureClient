@@ -60,7 +60,7 @@ function OrderManagement() {
       if (result.isSuccess !== false) {
         toast.success("Order updated successfully!");
         //myfix
-        //refetch();
+        refetch();
         //myfix ends
       } else {
         toast.error("Failed to update order.");

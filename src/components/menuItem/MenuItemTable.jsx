@@ -1,6 +1,32 @@
 import { API_BASE_URL } from "../../utility/constants";
+import { useState } from "react";
+import Pagination from "../ui/Pagination";
 
 function MenuItemTable({ menuItems, isLoading, error, onDelete, onEdit }) {
+  // Pagination state - ONLY currentPage needed
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  //  Pure derived state - NO useEffect, NO extra state
+
+  const totalItems = menuItems.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Automatically clamp currentPage to valid range
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages || 1);
+
+  // Compute pagination directly - super fast
+  const paginatedMenuItems = menuItems.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
+  );
+  //myfix ends
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -47,7 +73,8 @@ function MenuItemTable({ menuItems, isLoading, error, onDelete, onEdit }) {
             </tr>
           </thead>
           <tbody>
-            {menuItems.map((item) => (
+            {paginatedMenuItems.map((item) => (
+              // {menuItems.map((item) => (
               <tr key={item.id}>
                 <td>
                   <img
@@ -103,6 +130,21 @@ function MenuItemTable({ menuItems, isLoading, error, onDelete, onEdit }) {
           </tbody>
         </table>
       </div>
+      {/* Add pagination component */}
+      {/* <Pagination
+        currentPage={currentPage}
+        totalPages={Math.ceil(paginatedMenuItems.length / itemsPerPage)}
+        onPageChange={handlePageChange}
+        totalItems={paginatedMenuItems.length}
+        itemsPerPage={itemsPerPage}
+      /> */}
+      <Pagination
+        currentPage={safeCurrentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+      />
     </>
   );
 }

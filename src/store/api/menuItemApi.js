@@ -39,7 +39,8 @@ export const menuItemsApi = baseApi.injectEndpoints({
 
     deleteMenuItem: builder.mutation({
       query: (id) => ({
-        url: `/MenuItem?id=${id}`,
+        //url: `/MenuItem?id=${id}`,
+        url: `/MenuItem/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["MenuItem"],

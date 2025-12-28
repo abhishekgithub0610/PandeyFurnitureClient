@@ -1,6 +1,10 @@
 import { useParams } from "react-router-dom";
 import { useGetMenuItemByIdQuery } from "../../store/api/menuItemApi";
-import { API_BASE_URL, ROUTES } from "../../utility/constants";
+import {
+  API_BASE_URL,
+  ROUTES,
+  DESCRIPTION_LIMIT,
+} from "../../utility/constants";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +18,7 @@ function MenuItemDetails() {
   const itemId = parseInt(id);
   const isValidItemId = !isNaN(itemId) && itemId > 0;
   const [quantity, setQuantity] = useState(1);
+  const [expanded, setExpanded] = useState(false);
 
   const {
     data: selectedMenuItem,
@@ -33,6 +38,19 @@ function MenuItemDetails() {
       })
     );
     toast.success(`${selectedMenuItem.name} added to cart!`);
+  };
+
+  const handleNotify = (id) => {
+    // dispatch(
+    //   addToCart({
+    //     id: item.id,
+    //     name: item.name,
+    //     price: item.price,
+    //     image: item.image,
+    //     quantity: 1,
+    //   })
+    // );
+    toast.success(`will notify you when the item is back in stock!`);
   };
 
   if (!isValidItemId) {
@@ -92,6 +110,15 @@ function MenuItemDetails() {
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
     productUrl
   )}`;
+
+  const description = selectedMenuItem?.description || "";
+  const isLong = description.length > DESCRIPTION_LIMIT;
+
+  const visibleText = expanded
+    ? description
+    : description.slice(0, DESCRIPTION_LIMIT);
+  const isOutOfStock = selectedMenuItem.quantity < 1;
+
   //my code ends
   return (
     <>
@@ -157,10 +184,22 @@ function MenuItemDetails() {
                       <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 fs-6">
                         {selectedMenuItem.category}
                       </span>
-                      <span className="text-success small fw-semibold">
+
+                      {isOutOfStock ? (
+                        <span className="text-danger small fw-semibold">
+                          <i className="bi bi-x-circle-fill me-1"></i>
+                          Out of Stock
+                        </span>
+                      ) : (
+                        <span className="text-success small fw-semibold">
+                          <i className="bi bi-check-circle-fill me-1"></i>
+                          Available
+                        </span>
+                      )}
+                      {/* <span className="text-success small fw-semibold">
                         <i className="bi bi-check-circle-fill me-1"></i>
                         Available
-                      </span>
+                      </span> */}
                     </div>
                   </div>
                   <div className="text-end">
@@ -224,7 +263,7 @@ function MenuItemDetails() {
               </div>
 
               {/* Description */}
-              <div className="mb-4">
+              {/* <div className="mb-4">
                 <h5 className="fw-semibold mb-3 text-muted small text-uppercase">
                   Description
                 </h5>
@@ -234,6 +273,28 @@ function MenuItemDetails() {
                 >
                   {selectedMenuItem.description}
                 </p>
+              </div> */}
+              <div className="mb-4">
+                <h5 className="fw-semibold mb-3 text-muted small text-uppercase">
+                  Description
+                </h5>
+
+                <p
+                  className="text-muted lead mb-1"
+                  style={{ lineHeight: "1.6" }}
+                >
+                  {visibleText}
+                  {!expanded && isLong && "..."}
+                </p>
+
+                {isLong && (
+                  <button
+                    className="btn btn-link p-0 fw-semibold"
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? "Read Less" : "Read More"}
+                  </button>
+                )}
               </div>
 
               {/* Add to Cart Section */}
@@ -285,6 +346,49 @@ function MenuItemDetails() {
                       </div>
                       <div className="col-sm-7">
                         <div className="d-grid gap-2">
+                          {isOutOfStock ? (
+                            <>
+                              {/* Out of Stock Label */}
+                              <div className="alert alert-danger text-center fw-semibold mb-2">
+                                🚫 This item is currently out of stock
+                              </div>
+
+                              {/* Notify Me Button */}
+                              <button
+                                className="btn btn-outline-danger btn-lg fw-semibold"
+                                onClick={() =>
+                                  handleNotify(selectedMenuItem.id)
+                                }
+                              >
+                                🔔 Notify me when available
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {/* Add to Cart */}
+                              <button
+                                className="btn btn-primary btn-lg fw-semibold shadow-sm"
+                                onClick={handleAddToCart}
+                              >
+                                <i className="bi bi-cart-plus me-2"></i>
+                                Add to Cart
+                              </button>
+                            </>
+                          )}
+
+                          {/* Continue Shopping always visible */}
+                          <button
+                            className="btn btn-outline-primary"
+                            onClick={() => navigate(ROUTES.HOME)}
+                          >
+                            <i className="bi bi-arrow-left me-2"></i>
+                            Continue Shopping
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* <div className="col-sm-7">
+                        <div className="d-grid gap-2">
                           <button
                             className="btn btn-primary btn-lg fw-semibold shadow-sm"
                             onClick={handleAddToCart}
@@ -301,7 +405,7 @@ function MenuItemDetails() {
                             Continue Shopping
                           </button>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Total Price Display */}
