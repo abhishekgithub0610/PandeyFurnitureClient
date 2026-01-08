@@ -13,5 +13,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(baseApi.middleware),
 });
-
+if (process.env.NODE_ENV === "development") {
+  window.store = store;
+}
 export default store;

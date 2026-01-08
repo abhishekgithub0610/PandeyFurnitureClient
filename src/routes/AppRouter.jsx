@@ -7,6 +7,7 @@ import MenuItemManagement from "../pages/menu/MenuItemManagement";
 import Cart from "../pages/cart/Cart";
 import Checkout from "../pages/cart/Checkout";
 import Register from "../pages/auth/Register";
+import EmailConfirmed from "../pages/auth/EmailConfirmed";
 import OrderConfirmation from "../pages/order/OrderConfirmation";
 import { ROLES, ROUTES } from "../utility/constants";
 import MenuItemDetails from "../pages/menu/menuItemDetails";
@@ -46,6 +47,7 @@ const AppRoutes = () => (
     <Route path={ROUTES.CHECKOUT} element={<Checkout />} />
     <Route path={ROUTES.ORDER_CONFIRMATION} element={<OrderConfirmation />} />
     <Route path="*" element={<NotFound />} />
+    <Route path={ROUTES.EMAIL_CONFIRMED} element={<EmailConfirmed />} />
   </Routes>
 );
 export default AppRoutes;

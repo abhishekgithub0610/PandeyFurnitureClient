@@ -47,7 +47,10 @@ function Register() {
     try {
       const result = await registerUser(registerData).unwrap();
       if (result.isSuccess) {
-        toast.success("Registration successful! Please login to continue.");
+        //toast.success("Registration successful! Please login to continue.");
+        toast.success(
+          "Registration successful! A confirmation email has been sent. Please verify your email to continue."
+        );
         navigate(ROUTES.LOGIN);
       } else {
         toast.error(result.errorMessages?.[0] || "Registration failed");

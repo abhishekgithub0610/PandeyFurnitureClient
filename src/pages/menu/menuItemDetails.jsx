@@ -50,7 +50,7 @@ function MenuItemDetails() {
     //     quantity: 1,
     //   })
     // );
-    toast.success(`will notify you when the item is back in stock!`);
+    toast.success(`We will notify you when the item is back in stock!`);
   };
 
   if (!isValidItemId) {
