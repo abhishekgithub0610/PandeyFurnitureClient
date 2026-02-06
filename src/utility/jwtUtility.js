@@ -18,7 +18,7 @@ export const getUserInfoFromToken = (token) => {
   if (!decodedToken) return null;
 
   return {
-    id: decodedToken.id,
+    id: decodedToken.nameid,
     name: decodedToken.fullname,
     email: decodedToken.email,
     role: decodedToken.role,

@@ -34,7 +34,7 @@ function Login() {
     try {
       const result = await loginUser(formData).unwrap();
       if (result.isSuccess) {
-        const token = result.result.token;
+        const token = result.result.accessToken;
         const user = getUserInfoFromToken(token);
         toast.success("Login successful.");
         dispatch(setAuth({ user, token }));
@@ -123,7 +123,14 @@ function Login() {
                     </div>
                   </div>
                 </div>
-
+                <div className="text-end mb-3">
+                  <Link
+                    to={ROUTES.FORGOT_PASSWORD}
+                    className="small fw-semibold"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <button
                   type="submit"
                   disabled={isLoading}

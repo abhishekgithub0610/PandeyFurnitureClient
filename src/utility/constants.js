@@ -9,6 +9,8 @@ export const ROUTES = {
   MENU_MANAGEMENT: "/menu-management",
   ORDER_MANAGEMENT: "/order-management",
   EMAIL_CONFIRMED: "/email-confirmed",
+  RESET_PASSWORD: "/reset-password",
+  FORGOT_PASSWORD: "/forgot-password",
 };
 
 export const API_BASE_URL = "https://localhost:7188";

@@ -36,45 +36,99 @@ function OrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updateData, setUpdateData] = useState({
     status: "",
+    //my code
+    rowVersion: "",
+    //my code ends
   });
   const [statusFilter, setStatusFilter] = useState("");
   const [searchFilter, setSearchFilter] = useState("");
+
+  //my fix
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     try {
-      //call api to create
       if (!selectedOrder || !isAdmin) {
         toast.error("You do not have permission to update orders");
-        setIsSubmitting(false);
         return;
       }
-      let result;
-      result = await updateOrder({
-        orderId: selectedOrder.orderHeaderId,
-        orderData: {
-          status: updateData.status,
-          orderHeaderId: selectedOrder.orderHeaderId,
-        },
-      });
-      if (result.isSuccess !== false) {
+
+      try {
+        await updateOrder({
+          orderId: selectedOrder.orderHeaderId,
+          orderData: {
+            orderHeaderId: selectedOrder.orderHeaderId,
+            status: updateData.status,
+            //my code
+            rowVersion: updateData.rowVersion, // 🔒 SEND BACK
+            //my code ends
+          },
+        }).unwrap(); // 🔒 throws on 4xx/5xx
+
         toast.success("Order updated successfully!");
-        //myfix
         refetch();
-        //myfix ends
-      } else {
-        toast.error("Failed to update order.");
+        setShowModal(false);
+      } catch (err) {
+        if (err?.status === 409) {
+          toast.error(
+            "This order was modified by someone else. Please refresh and try again."
+          );
+        } else {
+          toast.error("Failed to update order");
+        }
       }
-      setShowModal(false);
-    } catch (error) {
-      console.log(error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // const handleFormSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+  //   try {
+  //     //call api to create
+  //     if (!selectedOrder || !isAdmin) {
+  //       toast.error("You do not have permission to update orders");
+  //       setIsSubmitting(false);
+  //       return;
+  //     }
+  //     let result;
+  //     result = await updateOrder({
+  //       orderId: selectedOrder.orderHeaderId,
+  //       orderData: {
+  //         status: updateData.status,
+  //         orderHeaderId: selectedOrder.orderHeaderId,
+  //       },
+  //     });
+  //     if (result.isSuccess !== false) {
+  //       toast.success("Order updated successfully!");
+  //       //myfix
+  //       refetch();
+  //       //myfix ends
+  //     } else {
+  //       toast.error("Failed to update order.");
+  //     }
+  //     setShowModal(false);
+  //   } catch (error) {
+  //     console.log(error);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+  //my fix ends
   const handleEditOrder = (order) => {
-    setShowModal(true);
+    //my code
+    // // setShowModal(true);
+    // // setSelectedOrder(order);
     setSelectedOrder(order);
+    setUpdateData({
+      status: order.status,
+      rowVersion: order.rowVersion, // 🔒 capture rowVersion
+    });
+    setShowModal(true);
+    //my code ends
   };
   const handleCloseModal = () => {
     setShowModal(false);

@@ -33,6 +33,9 @@ function MenuManagement() {
     price: "",
     image: null,
     quantity: "",
+    //my code
+    rowVersion: "",
+    //my code ends
   });
 
   const resetForm = () => {
@@ -44,6 +47,9 @@ function MenuManagement() {
       price: "",
       image: null,
       quantity: "",
+      //my code
+      rowVersion: "",
+      //my code ends
     });
   };
 
@@ -83,6 +89,9 @@ function MenuManagement() {
       price: item.price || "",
       image: null,
       quantity: item.quantity || "",
+      //my code
+      rowVersion: item.rowVersion,
+      //my code ends
     });
     setShowModal(true);
   };
@@ -98,6 +107,7 @@ function MenuManagement() {
       formDataToSend.append("Price", formData.price);
       formDataToSend.append("SpecialTag", formData.specialTag);
       formDataToSend.append("Quantity", formData.quantity);
+
       if (formData.image) {
         formDataToSend.append("File", formData.image);
       }
@@ -107,16 +117,38 @@ function MenuManagement() {
       let result;
       if (selectedMenuItem) {
         //edit mode
-        result = await updateMenuItem({
-          id: selectedMenuItem.id,
-          formData: formDataToSend,
-        });
-        if (result.isSuccess !== false) {
+        //my code
+        formDataToSend.append("RowVersion", formData.rowVersion); // 🔒 SEND BACK
+
+        // result = await updateMenuItem({
+        //   id: selectedMenuItem.id,
+        //   formData: formDataToSend,
+        // });
+        // if (result.isSuccess !== false) {
+        //   toast.success("Menu item updated successfully!");
+        //   refetch();
+        // } else {
+        //   toast.error("Failed to updated menu item");
+        // }
+        try {
+          await updateMenuItem({
+            id: selectedMenuItem.id,
+            formData: formDataToSend,
+          }).unwrap(); // 🔒 throws on 4xx/5xx
+
           toast.success("Menu item updated successfully!");
           refetch();
-        } else {
-          toast.error("Failed to updated menu item");
+        } catch (err) {
+          if (err?.status === 409) {
+            toast.error(
+              "This item was modified by someone else. Please refresh and try again."
+            );
+          } else {
+            toast.error("Failed to update menu item");
+          }
         }
+
+        //my code ends
       } else {
         result = await createMenuItem(formDataToSend);
         if (result.isSuccess !== false) {
@@ -126,6 +158,7 @@ function MenuManagement() {
           toast.error("Failed to create menu item");
         }
       }
+
       setShowModal(false);
       resetForm();
     } catch (error) {

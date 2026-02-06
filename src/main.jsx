@@ -7,12 +7,16 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import { Provider } from "react-redux";
 import store from "./store/store.js";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import AuthInitializer from "./auth/AuthInitializer";
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <AuthInitializer>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </AuthInitializer>
     </Provider>
   </StrictMode>
 );

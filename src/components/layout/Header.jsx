@@ -3,16 +3,43 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { logout } from "../../store/slice/authSlice";
 import { toggleTheme } from "../../store/slice/themeSlice";
+import {
+  useGetCurrentUserQuery,
+  useLogoutUserMutation,
+} from "../../store/api/authApi";
+
 function Header() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  //my code
+  // // const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading } = useSelector(
+    (state) => state.auth
+  );
+  //my code ends
+
   const { totalItems } = useSelector((state) => state.cart);
 
-  const handleLogout = () => {
+  // const { data: user, isLoading } = useGetCurrentUserQuery();
+  const [logoutUser] = useLogoutUserMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+    //my code
     dispatch(logout());
-    navigate(ROUTES.HOME);
+    navigate("/");
+    //my code ends
   };
+
+  if (isLoading) return null; // or a loader
+  // // const handleLogout = () => {
+  // //   dispatch(logout());
+  // //   navigate(ROUTES.HOME);
+  // // };
 
   return (
     <nav className="navbar navbar-expand-lg  border-bottom shadow-sm">

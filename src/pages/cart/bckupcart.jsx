@@ -46,40 +46,50 @@ function Cart() {
       [e.target.name]: e.target.value,
     });
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // COD → existing behavior (NO CHANGE)
-    if (paymentMethod === "COD") {
-      await placeOrderCOD();
+    console.log("User object from Redux:", user);
+    const errors = [];
+    if (!formData.pickUpName.trim()) {
+      errors.push("Full Name is required");
+    }
+    if (!formData.pickUpEmail.trim()) {
+      errors.push("Email is required");
+    }
+    if (!formData.pickUpPhoneNumber.trim()) {
+      errors.push("Phone Number is required");
+    }
+    if (errors.length > 0) {
+      toast.error(
+        <div>
+          <strong>Please correct the following:</strong>
+          <ul className="mb-0 mt-1 ps-3">
+            {errors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </div>,
+      );
       return;
     }
-
-    // ➕ NEW: Razorpay flow
-    if (paymentMethod === "RAZORPAY") {
-      await startRazorpayPayment();
+    if (!user?.id) {
+      toast.error("Unable to identify user. Please log in again.");
       return;
     }
-  };
-  // ➕ NEW
-  const buildOrderPayload = () => ({
-    pickUpName: formData.pickUpName,
-    pickUpPhoneNumber: formData.pickUpPhoneNumber,
-    pickUpEmail: formData.pickUpEmail,
-    applicationUserId: user?.id,
-    orderDetailsDTO: items.map((item) => ({
-      menuItemId: item.id,
-      quantity: item.quantity,
-      itemName: item.name,
-      price: item.price,
-    })),
-  });
-
-  // ➕ NEW (this is your existing logic moved here)
-  const placeOrderCOD = async () => {
-    const orderData = buildOrderPayload();
-
+    const orderData = {
+      pickUpName: formData.pickUpName,
+      pickUpPhoneNumber: formData.pickUpPhoneNumber,
+      pickUpEmail: formData.pickUpEmail,
+      applicationUserId: user?.id,
+      orderTotal: totalAmount,
+      totalItem: totalItems,
+      orderDetailsDTO: items.map((item) => ({
+        menuItemId: item.id,
+        quantity: item.quantity,
+        itemName: item.name,
+        price: item.price,
+      })),
+    };
     try {
       const result = await createOrder(orderData).unwrap();
       if (result.isSuccess) {
@@ -96,75 +106,14 @@ function Cart() {
             },
           },
         });
+        //navigate(ROUTES.LOGIN);
+      } else {
+        toast.error(result.errorMessages?.[0] || "Failed to place order");
       }
     } catch (error) {
-      toast.error("Failed to place order");
+      toast.error(error.data?.errorMessages?.[0] || "Failed to place order");
     }
   };
-
-  // ➕ NEW
-  const startRazorpayPayment = async () => {
-    try {
-      // 1️⃣ Create order in DB (status = PAYMENT_PENDING)
-      const orderResult = await createOrder(buildOrderPayload()).unwrap();
-      const orderId = orderResult.result.orderHeaderId;
-
-      // 2️⃣ Create Razorpay order linked to OrderHeaderId
-      const res = await fetch(`${API_BASE_URL}/api/payments/razorpay/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: totalAmount,
-          orderHeaderId: orderId,
-        }),
-      });
-
-      const data = await res.json();
-
-      const options = {
-        key: data.key,
-        amount: data.amount,
-        currency: "INR",
-        name: "Pandey Furniture",
-        order_id: data.razorpayOrderId,
-        handler: async function (response) {
-          await verifyPayment(response, orderId);
-        },
-        prefill: {
-          name: formData.pickUpName,
-          email: formData.pickUpEmail,
-          contact: formData.pickUpPhoneNumber,
-        },
-      };
-
-      new window.Razorpay(options).open();
-    } catch {
-      toast.error("Payment initiation failed");
-    }
-  };
-
-  // ➕ NEW
-  const verifyPayment = async (paymentResponse, orderHeaderId) => {
-    const verifyRes = await fetch(`${API_BASE_URL}/payments/razorpay/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        ...paymentResponse,
-        orderHeaderId,
-      }),
-    });
-
-    if (!verifyRes.ok) {
-      toast.error("Payment verification failed");
-      return;
-    }
-
-    toast.success("Payment successful!");
-    navigate(ROUTES.ORDER_CONFIRMATION);
-  };
-
   if (items.length === 0) {
     return (
       <div className="container py-5">
