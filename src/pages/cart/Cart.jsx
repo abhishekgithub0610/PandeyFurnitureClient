@@ -19,6 +19,7 @@ function Cart() {
   // values: COD | RAZORPAY | STRIPE
 
   const { items, totalAmount, totalItems } = useSelector((state) => state.cart);
+
   const { user } = useSelector((state) => state.auth);
   const handleQuantityChange = (id, quantity) => {
     if (quantity < 1) {
@@ -62,13 +63,14 @@ function Cart() {
       return;
     }
   };
+
   // ➕ NEW
   const buildOrderPayload = () => ({
     pickUpName: formData.pickUpName,
     pickUpPhoneNumber: formData.pickUpPhoneNumber,
     pickUpEmail: formData.pickUpEmail,
     applicationUserId: user?.id,
-    orderDetailsDTO: items.map((item) => ({
+    orderDetails: items.map((item) => ({
       menuItemId: item.id,
       quantity: item.quantity,
       itemName: item.name,
@@ -81,6 +83,7 @@ function Cart() {
     const orderData = buildOrderPayload();
 
     try {
+      console.log(orderData);
       const result = await createOrder(orderData).unwrap();
       if (result.isSuccess) {
         toast.success("Order placed successfully!");
@@ -120,6 +123,20 @@ function Cart() {
         }),
       });
 
+      // const token = user?.token;
+
+      // fetch(`${API_BASE_URL}/api/payments/razorpay/create`, {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     amount: totalAmount,
+      //     orderHeaderId: orderId,
+      //   }),
+      // });
+
       const data = await res.json();
 
       const options = {
@@ -146,15 +163,20 @@ function Cart() {
 
   // ➕ NEW
   const verifyPayment = async (paymentResponse, orderHeaderId) => {
-    const verifyRes = await fetch(`${API_BASE_URL}/payments/razorpay/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        ...paymentResponse,
-        orderHeaderId,
-      }),
-    });
+    const verifyRes = await fetch(
+      `${API_BASE_URL}/api/payments/razorpay/verify`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          razorpay_payment_id: paymentResponse.razorpay_payment_id,
+          razorpay_order_id: paymentResponse.razorpay_order_id,
+          razorpay_signature: paymentResponse.razorpay_signature,
+          orderHeaderId,
+        }),
+      },
+    );
 
     if (!verifyRes.ok) {
       toast.error("Payment verification failed");
