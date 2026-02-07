@@ -2,21 +2,13 @@ import { baseApi } from "./baseApi";
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    //create all endpoints
+
     loginUser: builder.mutation({
       query: (formData) => ({
         url: "auth/login",
         method: "POST",
         body: formData,
-        // credentials: "include" should be in baseApi's fetchBaseQuery
-        // to ensure the refresh cookie is saved by the browser
-      }),
-      invalidatesTags: ["Auth"],
-    }),
-
-    logoutUser: builder.mutation({
-      query: () => ({
-        url: "auth/logout",
-        method: "POST",
       }),
       invalidatesTags: ["Auth"],
     }),
@@ -26,6 +18,14 @@ export const authApi = baseApi.injectEndpoints({
         url: "auth/register",
         method: "POST",
         body: formData,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
+    logoutUser: builder.mutation({
+      query: () => ({
+        url: "auth/logout",
+        method: "POST",
       }),
       invalidatesTags: ["Auth"],
     }),
@@ -58,6 +58,7 @@ export const authApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
 export const {
   useRegisterUserMutation,
   useLoginUserMutation,
