@@ -56,6 +56,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Auth", "Order", "MenuItem"], // Add your tags here for auto-invalidation
+  tagTypes: ["Auth", "Order", "MenuItem", "Profile"], // Add your tags here for auto-invalidation
   endpoints: () => ({}),
 });

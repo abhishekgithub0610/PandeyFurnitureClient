@@ -11,10 +11,13 @@ export const ROUTES = {
   EMAIL_CONFIRMED: "/email-confirmed",
   RESET_PASSWORD: "/reset-password",
   FORGOT_PASSWORD: "/forgot-password",
+  PROFILE_PAGE: "/profile",
 };
 
 export const API_BASE_URL = "https://localhost:7188";
 export const DESCRIPTION_LIMIT = 100;
+export const VITE_GOOGLE_MAPS_API_KEY =
+  "AIzaSyBOTXDsNYyBJ2AzGfPEjk7ZaXwVxFphNuU";
 
 export const CATEGORY = [
   "Living Room",

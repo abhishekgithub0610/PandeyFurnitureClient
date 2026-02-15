@@ -11,6 +11,7 @@ import ResetPassword from "../pages/auth/ResetPassword";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import EmailConfirmed from "../pages/auth/EmailConfirmed";
 import OrderConfirmation from "../pages/order/OrderConfirmation";
+import ProfilePage from "../pages/profile/ProfilePage";
 import { ROLES, ROUTES } from "../utility/constants";
 import MenuItemDetails from "../pages/menu/menuItemDetails";
 import RoleBasedRoutes from "./RoleBasedRoutes";
@@ -22,6 +23,7 @@ const AppRoutes = () => (
     <Route path={ROUTES.LOGIN} element={<Login />} />
     <Route path={ROUTES.REGISTER} element={<Register />} />
     <Route path={ROUTES.MENU_DETAIL} element={<MenuItemDetails />} />
+    <Route path={ROUTES.PROFILE_PAGE} element={<ProfilePage />} />
     <Route
       path={ROUTES.ORDER_MANAGEMENT}
       element={

@@ -1,7 +1,9 @@
 import AppRoutes from "./routes/AppRouter";
 import Header from "./components/layout/Header";
+import { LoadScript } from "@react-google-maps/api";
 import Footer from "./components/layout/Footer";
 import { useSelector } from "react-redux";
+import { VITE_GOOGLE_MAPS_API_KEY } from "./utility/constants";
 import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 function App() {
@@ -24,28 +26,33 @@ function App() {
   }, [theme]);
 
   return (
-    <div
-      className="d-flex flex-column min-vh-100 bg-body"
-      style={getThemeStyles()}
+    <LoadScript
+      googleMapsApiKey={VITE_GOOGLE_MAPS_API_KEY}
+      libraries={["places"]}
     >
-      <Header />
-      <main className="flex-grow-1">
-        <AppRoutes />
-      </main>
-      <Footer />
-      <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-    </div>
+      <div
+        className="d-flex flex-column min-vh-100 bg-body"
+        style={getThemeStyles()}
+      >
+        <Header />
+        <main className="flex-grow-1">
+          <AppRoutes />
+        </main>
+        <Footer />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </div>
+    </LoadScript>
   );
 }
 
