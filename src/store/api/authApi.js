@@ -56,6 +56,13 @@ export const authApi = baseApi.injectEndpoints({
       query: () => "/auth/me",
       providesTags: ["Auth"], // allows auto-update when login/logout happens
     }),
+    resendConfirmation: builder.mutation({
+      query: (data) => ({
+        url: "auth/resend-confirmation-email",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 export const {
@@ -65,4 +72,5 @@ export const {
   useResetPasswordMutation,
   useLogoutUserMutation,
   useGetCurrentUserQuery, // ✅ hook to get current user
+  useResendConfirmationMutation,
 } = authApi;

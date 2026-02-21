@@ -6,9 +6,13 @@ import { toast } from "react-toastify";
 import { API_BASE_URL, ROUTES } from "../../utility/constants";
 import { useCreateOrderMutation } from "../../store/api/ordersApi";
 import {
-  clearCart,
-  removeFromCart,
-  updateQuantity,
+  updateQuantityGuest,
+  removeFromCartGuest,
+  clearCartGuest,
+  updateQuantityAsync,
+  removeFromCartAsync,
+  clearCartAsync,
+  fetchCartAsync,
 } from "../../store/slice/cartSlice";
 function Cart() {
   const dispatch = useDispatch();
@@ -21,19 +25,41 @@ function Cart() {
   const { items, totalAmount, totalItems } = useSelector((state) => state.cart);
 
   const { user } = useSelector((state) => state.auth);
+  // ✅ UPDATED: Handle quantity differently for guest vs logged-in
   const handleQuantityChange = (id, quantity) => {
     if (quantity < 1) {
       handleRemoveItem(id);
       return;
     }
-    dispatch(updateQuantity({ id, quantity: parseInt(quantity) }));
+
+    if (user) {
+      // 🔵 Logged-in → Update DB
+      dispatch(updateQuantityAsync({ menuItemId: id, quantity }));
+    } else {
+      // 🟢 Guest → Update localStorage
+      dispatch(updateQuantityGuest({ id, quantity }));
+    }
   };
+
+  // ✅ UPDATED: Remove logic split
   const handleRemoveItem = (id) => {
-    dispatch(removeFromCart(id));
+    if (user) {
+      dispatch(removeFromCartAsync(id));
+    } else {
+      dispatch(removeFromCartGuest(id));
+    }
+
     toast.success("Item removed from cart.");
   };
+
+  // ✅ UPDATED: Clear logic split
   const handleClearCart = () => {
-    dispatch(clearCart());
+    if (user) {
+      dispatch(clearCartAsync());
+    } else {
+      dispatch(clearCartGuest());
+    }
+
     toast.success("Cart cleared.");
   };
   const [formData, setFormData] = useState({
@@ -46,6 +72,16 @@ function Cart() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  // ✅ UPDATED: Clear cart AFTER successful order
+  const clearCartAfterSuccess = () => {
+    if (user) {
+      dispatch(clearCartAsync());
+      dispatch(fetchCartAsync());
+    } else {
+      dispatch(clearCartGuest());
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -86,6 +122,7 @@ function Cart() {
       console.log(orderData);
       const result = await createOrder(orderData).unwrap();
       if (result.isSuccess) {
+        clearCartAfterSuccess(); // ✅ important
         toast.success("Order placed successfully!");
         navigate(ROUTES.ORDER_CONFIRMATION, {
           state: {
@@ -109,7 +146,11 @@ function Cart() {
   const startRazorpayPayment = async () => {
     try {
       // 1️⃣ Create order in DB (status = PAYMENT_PENDING)
+      //const orderResult = await createOrder(buildOrderPayload()).unwrap();
+      if (isLoading) return; // 🔥 Prevent double click
+
       const orderResult = await createOrder(buildOrderPayload()).unwrap();
+
       const orderId = orderResult.result.orderHeaderId;
 
       // 2️⃣ Create Razorpay order linked to OrderHeaderId
@@ -137,7 +178,12 @@ function Cart() {
       //   }),
       // });
 
-      const data = await res.json();
+      //const data = await res.json();
+
+      if (!res.ok) {
+        toast.error("Failed to create Razorpay order");
+        return;
+      }
 
       const options = {
         key: data.key,
@@ -182,9 +228,19 @@ function Cart() {
       toast.error("Payment verification failed");
       return;
     }
+    clearCartAfterSuccess(); // ✅ important
 
     toast.success("Payment successful!");
-    navigate(ROUTES.ORDER_CONFIRMATION);
+    //navigate(ROUTES.ORDER_CONFIRMATION);
+    navigate(ROUTES.ORDER_CONFIRMATION, {
+      state: {
+        orderData: {
+          orderNumber: orderHeaderId,
+          orderTotal: totalAmount,
+          totalItems,
+        },
+      },
+    });
   };
 
   if (items.length === 0) {
@@ -284,12 +340,19 @@ function Cart() {
                                   <input
                                     type="number"
                                     value={item.quantity}
-                                    onChange={(e) =>
-                                      handleQuantityChange(
-                                        item.id,
-                                        e.target.value,
-                                      )
-                                    }
+                                    onChange={(e) => {
+                                      const qty = Math.max(
+                                        1,
+                                        Number(e.target.value) || 1,
+                                      ); // 🔥 safe conversion
+                                      handleQuantityChange(item.id, qty);
+                                    }}
+                                    // onChange={(e) =>
+                                    //   handleQuantityChange(
+                                    //     item.id,
+                                    //     e.target.value,
+                                    //   )
+                                    // }
                                     className="form-control text-center"
                                     min="1"
                                   />
@@ -483,7 +546,7 @@ function Cart() {
                       <button
                         className="btn btn-primary btn-lg"
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || items.length === 0} // 🔥 Prevent empty order
                       >
                         {isLoading ? (
                           <>

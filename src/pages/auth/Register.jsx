@@ -1,62 +1,151 @@
 import { ROLES, ROUTES } from "../../utility/constants";
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegisterUserMutation } from "../../store/api/authApi";
 import { toast } from "react-toastify";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+
+// ✅ NEW: Validation schema (Synced with .NET DTO rules)
+const registerSchema = yup.object({
+  name: yup
+    .string()
+    .required("Name is required")
+    .min(2, "Name must be at least 2 characters"),
+
+  email: yup
+    .string()
+    .required("Email is required")
+    .email("Invalid email format"),
+
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password cannot exceed 100 characters")
+    // ✅ NEW: Strong password format validation (Synced with .NET Regex)
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/,
+      "Password must contain uppercase, lowercase, number, and special character",
+    ),
+
+  confirmPassword: yup
+    .string()
+    .required("Confirm Password is required")
+    .oneOf([yup.ref("password")], "Passwords must match"),
+
+  role: yup.string().required(),
+});
+// ✅ ADD THIS (You forgot this part)
+
 function Register() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: ROLES.CUSTOMER,
+  // const [formData, setFormData] = useState({
+  //   name: "",
+  //   email: "",
+  //   password: "",
+  //   confirmPassword: "",
+  //   role: ROLES.CUSTOMER,
+  // });
+  const {
+    register,
+    handleSubmit,
+    setError, // NEW
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(registerSchema),
+    mode: "onTouched", // NEW
+    defaultValues: {
+      role: ROLES.CUSTOMER,
+    },
   });
 
-  const [registerUser, { isLoading, error }] = useRegisterUserMutation();
+  const [registerUser, { isLoading }] = useRegisterUserMutation();
+  //const [registerUser, { isLoading, error }] = useRegisterUserMutation();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // const handleChange = (e) => {
+  //   setFormData({
+  //     ...formData,
+  //     [e.target.name]: e.target.value,
+  //   });
+  // };
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      toast.error("Please fill in all the fields.");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
+  //   if (
+  //     !formData.name ||
+  //     !formData.email ||
+  //     !formData.password ||
+  //     !formData.confirmPassword
+  //   ) {
+  //     toast.error("Please fill in all the fields.");
+  //     return;
+  //   }
+  //   if (formData.password !== formData.confirmPassword) {
+  //     toast.error("Passwords do not match");
+  //     return;
+  //   }
 
-    const registerData = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-    };
+  //   const registerData = {
+  //     name: formData.name,
+  //     email: formData.email,
+  //     password: formData.password,
+  //     role: formData.role,
+  //   };
+  //   try {
+  //     const result = await registerUser(registerData).unwrap();
+  //     if (result.isSuccess) {
+  //       //toast.success("Registration successful! Please login to continue.");
+  //       toast.success(
+  //         "Registration successful! A confirmation email has been sent. Please verify your email to continue.",
+  //       );
+  //       navigate(ROUTES.LOGIN);
+  //     } else {
+  //       toast.error(result.errorMessages?.[0] || "Registration failed");
+  //     }
+  //   } catch (error) {
+  //     toast.error(error.data?.errorMessages?.[0] || "Registration failed");
+  //   }
+  // };
+
+  // ✅ CLEAN submit function (no manual validation needed)
+  const onSubmit = async (data) => {
     try {
+      const registerData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+      };
+
       const result = await registerUser(registerData).unwrap();
+
       if (result.isSuccess) {
-        //toast.success("Registration successful! Please login to continue.");
         toast.success(
-          "Registration successful! A confirmation email has been sent. Please verify your email to continue."
+          "Registration successful! We've sent a verification link to your email. Please verify to log in..",
         );
         navigate(ROUTES.LOGIN);
       } else {
         toast.error(result.errorMessages?.[0] || "Registration failed");
       }
     } catch (error) {
-      toast.error(error.data?.errorMessages?.[0] || "Registration failed");
+      if (error?.data?.errors) {
+        const serverErrors = error.data.errors;
+
+        Object.keys(serverErrors).forEach((key) => {
+          const fieldName = key.charAt(0).toLowerCase() + key.slice(1);
+
+          setError(fieldName, {
+            type: "server",
+            message: serverErrors[key][0],
+          });
+        });
+
+        return; // Stop toast if field errors exist
+      }
+
+      // Fallback error
+      toast.error("Registration failed");
     }
   };
 
@@ -102,7 +191,8 @@ function Register() {
                 <p className="text-muted small mb-0">Sign up to get started</p>
               </div>
 
-              <form onSubmit={handleSubmit}>
+              {/* <form onSubmit={handleSubmit}>
+              
                 <div className="form-floating mb-3">
                   <input
                     type="text"
@@ -187,6 +277,99 @@ function Register() {
                         role="status"
                       ></span>
                       Creating...{" "}
+                    </>
+                  ) : (
+                    <>Create Account</>
+                  )}
+                </button>
+              </form> */}
+
+              <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Name */}
+                <div className="form-floating mb-3">
+                  <input
+                    type="text"
+                    className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                    placeholder="Full Name"
+                    {...register("name")}
+                  />
+                  <label>Full Name</label>
+                  <div className="invalid-feedback">{errors.name?.message}</div>
+                </div>
+
+                {/* Email */}
+                <div className="form-floating mb-3">
+                  <input
+                    type="email"
+                    className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                    placeholder="name@example.com"
+                    {...register("email")}
+                  />
+                  <label>Email address</label>
+                  <div className="invalid-feedback">
+                    {errors.email?.message}
+                  </div>
+                </div>
+
+                <div className="row g-2 mb-2">
+                  {/* Password */}
+                  <div className="col-sm-6">
+                    <div className="form-floating">
+                      <input
+                        type="password"
+                        className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                        placeholder="Password"
+                        {...register("password")}
+                      />
+                      <label>Password</label>
+                      <div className="invalid-feedback">
+                        {errors.password?.message}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="col-sm-6">
+                    <div className="form-floating">
+                      <input
+                        type="password"
+                        className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
+                        placeholder="Confirm Password"
+                        {...register("confirmPassword")}
+                      />
+                      <label>Confirm Password</label>
+                      <div className="invalid-feedback">
+                        {errors.confirmPassword?.message}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role */}
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold text-uppercase text-muted">
+                    Role
+                  </label>
+                  <select
+                    className={`form-select ${errors.role ? "is-invalid" : ""}`}
+                    {...register("role")}
+                  >
+                    <option value={ROLES.CUSTOMER}>{ROLES.CUSTOMER}</option>
+                    <option value={ROLES.ADMIN}>{ROLES.ADMIN}</option>
+                  </select>
+                  <div className="invalid-feedback">{errors.role?.message}</div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100 py-2 mb-3"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Creating...
                     </>
                   ) : (
                     <>Create Account</>

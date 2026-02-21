@@ -9,11 +9,15 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { addToCart } from "../../store/slice/cartSlice";
+// 🔥 NEW IMPORTS
+import { addToCartGuest, addToCartAsync } from "../../store/slice/cartSlice";
+import { useSelector } from "react-redux";
 import Rating from "../../components/ui/Rating";
 function MenuItemDetails() {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+
   const navigate = useNavigate();
   const itemId = parseInt(id);
   const isValidItemId = !isNaN(itemId) && itemId > 0;
@@ -28,15 +32,27 @@ function MenuItemDetails() {
   } = useGetMenuItemByIdQuery(itemId);
 
   const handleAddToCart = () => {
-    dispatch(
-      addToCart({
-        id: selectedMenuItem.id,
-        name: selectedMenuItem.name,
-        price: selectedMenuItem.price,
-        image: selectedMenuItem.image,
-        quantity: quantity,
-      })
-    );
+    if (user) {
+      // 🔵 Logged-in → Save in DB
+      dispatch(
+        addToCartAsync({
+          menuItemId: selectedMenuItem.id,
+          quantity: quantity,
+        }),
+      );
+    } else {
+      // 🟢 Guest → Save in localStorage
+      dispatch(
+        addToCartGuest({
+          id: selectedMenuItem.id,
+          name: selectedMenuItem.name,
+          price: selectedMenuItem.price,
+          image: selectedMenuItem.image,
+          quantity: quantity,
+        }),
+      );
+    }
+
     toast.success(`${selectedMenuItem.name} added to cart!`);
   };
 
@@ -96,19 +112,19 @@ function MenuItemDetails() {
   //my code
   const productUrl = `${window.location.origin}${ROUTES.MENU_DETAIL.replace(
     ":id",
-    selectedMenuItem.id
+    selectedMenuItem.id,
   )}`;
 
   const shareText = encodeURIComponent(
-    `Check out this product:\n${selectedMenuItem.name}\nPrice: $${selectedMenuItem.price}\n`
+    `Check out this product:\n${selectedMenuItem.name}\nPrice: $${selectedMenuItem.price}\n`,
   );
 
   const whatsappShareUrl = `https://wa.me/?text=${shareText}${encodeURIComponent(
-    productUrl
+    productUrl,
   )}`;
 
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-    productUrl
+    productUrl,
   )}`;
 
   const description = selectedMenuItem?.description || "";
@@ -242,7 +258,7 @@ function MenuItemDetails() {
                         onClick={() => {
                           navigator.clipboard.writeText(productUrl);
                           toast.success(
-                            "Product link copied! Paste it on Instagram 📸"
+                            "Product link copied! Paste it on Instagram 📸",
                           );
                         }}
                       >
@@ -327,8 +343,8 @@ function MenuItemDetails() {
                               setQuantity(
                                 Math.max(
                                   1,
-                                  Math.min(10, parseInt(e.target.value) || 1)
-                                )
+                                  Math.min(10, parseInt(e.target.value) || 1),
+                                ),
                               )
                             }
                           />

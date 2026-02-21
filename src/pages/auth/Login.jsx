@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useLoginUserMutation } from "../../store/api/authApi";
 import { toast } from "react-toastify";
 import { setAuth } from "../../store/slice/authSlice";
+// ➕ NEW: import cart fetch action
+import { fetchCartAsync } from "../../store/slice/cartSlice";
 import { useDispatch } from "react-redux";
 import { getUserInfoFromToken } from "../../utility/jwtUtility";
 function Login() {
@@ -33,20 +35,40 @@ function Login() {
 
     try {
       const result = await loginUser(formData).unwrap();
-      if (result.isSuccess) {
-        const token = result.result.accessToken;
-        const user = getUserInfoFromToken(token);
-        toast.success("Login successful.");
-        dispatch(setAuth({ user, token }));
 
-        const from = location.state?.from || ROUTES.HOME;
+      const token = result.result.accessToken;
+      const user = getUserInfoFromToken(token);
 
-        navigate(from, { replace: true });
-      } else {
-        toast.error(result.errorMessages?.[0] || "Login failed");
+      toast.success("Login successful.");
+      dispatch(setAuth({ user, token }));
+
+      // ==============================
+      // ➕ NEW: Merge guest cart to DB
+      // ==============================
+      try {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/cart/merge`, {
+          method: "POST",
+          credentials: "include",
+        });
+
+        // Remove guest cart from localStorage
+        localStorage.removeItem("cart-mango");
+
+        // Fetch updated DB cart
+        dispatch(fetchCartAsync());
+      } catch (mergeError) {
+        console.warn("Cart merge failed:", mergeError);
       }
+      // ==============================
+
+      const from = location.state?.from || ROUTES.HOME;
+      navigate(from, { replace: true });
     } catch (error) {
-      toast.error(error.data?.errorMessages?.[0] || "Login failed");
+      if (error.status === 401) {
+        toast.error("Invalid credentials");
+      } else {
+        toast.error("Internal server error. Please try again shortly.");
+      }
     }
   };
 
@@ -148,6 +170,30 @@ function Login() {
                     <>Sign In</>
                   )}
                 </button>
+                {/* ============================= */}
+                {/* ✅ ADDED: Help Section */}
+                {/* Always visible – NOT conditional */}
+                {/* Improves UX without leaking info */}
+                {/* ============================= */}
+                <div className="text-center mt-2 small">
+                  <div className="text-muted mb-1">
+                    Having trouble signing in?
+                  </div>
+                  <Link
+                    to={ROUTES.RESEND_CONFIRMATION} // Make sure this route exists
+                    className="fw-semibold text-decoration-none"
+                  >
+                    Resend confirmation email
+                  </Link>
+                  <span className="mx-2 text-muted">|</span>
+                  <Link
+                    to={ROUTES.FORGOT_PASSWORD}
+                    className="fw-semibold text-decoration-none"
+                  >
+                    Reset password
+                  </Link>
+                </div>
+                {/* ============================= */}
               </form>
               <div className="text-center small">
                 <span className="text-muted">No account? </span>

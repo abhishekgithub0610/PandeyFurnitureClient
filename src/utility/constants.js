@@ -12,6 +12,7 @@ export const ROUTES = {
   RESET_PASSWORD: "/reset-password",
   FORGOT_PASSWORD: "/forgot-password",
   PROFILE_PAGE: "/profile",
+  RESEND_CONFIRMATION: "/resend-confirmation",
 };
 
 export const API_BASE_URL = "https://localhost:7188";

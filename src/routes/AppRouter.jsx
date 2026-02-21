@@ -9,6 +9,7 @@ import Checkout from "../pages/cart/Checkout";
 import Register from "../pages/auth/Register";
 import ResetPassword from "../pages/auth/ResetPassword";
 import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResendConfirmation from "../pages/auth/ResendConfirmation";
 import EmailConfirmed from "../pages/auth/EmailConfirmed";
 import OrderConfirmation from "../pages/order/OrderConfirmation";
 import ProfilePage from "../pages/profile/ProfilePage";
@@ -54,6 +55,7 @@ const AppRoutes = () => (
     <Route path={ROUTES.EMAIL_CONFIRMED} element={<EmailConfirmed />} />
     <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
     <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+    <Route path={ROUTES.RESEND_CONFIRMATION} element={<ResendConfirmation />} />
   </Routes>
 );
 export default AppRoutes;

@@ -1,9 +1,8 @@
-import { setAccessToken } from "@/store/slice/authSlice";
+import { setAccessToken, logout, setAuth } from "@/store/slice/authSlice";
 
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { API_BASE_URL } from "@/utility/constants";
-import { setAuth } from "@/store/slice/authSlice";
 import { getUserInfoFromToken } from "@/utility/jwtUtility";
 
 const AuthInitializer = ({ children }) => {
@@ -18,14 +17,21 @@ const AuthInitializer = ({ children }) => {
           credentials: "include",
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          const token = data.result?.accessToken || data.accessToken;
-          const user = getUserInfoFromToken(token);
-          dispatch(setAuth({ user, token }));
-        } else {
+        if (!res.ok) {
           dispatch(logout());
+          return;
         }
+
+        const data = await res.json();
+        const token = data.result?.accessToken || data.accessToken;
+
+        if (!token) {
+          dispatch(logout());
+          return;
+        }
+
+        const user = getUserInfoFromToken(token);
+        dispatch(setAuth({ user, token }));
       } catch (err) {
         console.error("Auth restore error:", err);
         dispatch(logout());

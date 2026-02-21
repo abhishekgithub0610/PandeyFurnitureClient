@@ -2,13 +2,17 @@ import { useGetMenuItemsQuery } from "../store/api/menuItemApi";
 import { API_BASE_URL, CATEGORY, ROUTES } from "../utility/constants";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../store/slice/cartSlice";
+import { addToCartGuest, addToCartAsync } from "../store/slice/cartSlice";
+import { useSelector } from "react-redux";
+
 import { useState } from "react";
 import { toast } from "react-toastify";
 import Rating from "../components/ui/Rating";
 import Carousel from "../components/ui/Carousel";
 function Home() {
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user); // adjust if different
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const {
@@ -18,17 +22,30 @@ function Home() {
     refetch,
   } = useGetMenuItemsQuery();
   const handleAddToCart = (item) => {
-    dispatch(
-      addToCart({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        image: item.image,
-        quantity: 1,
-      })
-    );
+    if (user) {
+      // 🔵 LOGGED-IN USER → Save in DB
+      dispatch(
+        addToCartAsync({
+          menuItemId: item.id,
+          quantity: 1,
+        }),
+      );
+    } else {
+      // 🟢 GUEST USER → Save in localStorage
+      dispatch(
+        addToCartGuest({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          image: item.image,
+          quantity: 1,
+        }),
+      );
+    }
+
     toast.success(`${item.name} added to cart!`);
   };
+
   const handleNotify = (id) => {
     // dispatch(
     //   addToCart({
