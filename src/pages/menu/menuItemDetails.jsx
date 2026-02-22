@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
 import { useGetMenuItemByIdQuery } from "../../store/api/menuItemApi";
+import { useState, useEffect } from "react";
 import {
   API_BASE_URL,
   ROUTES,
   DESCRIPTION_LIMIT,
 } from "../../utility/constants";
-import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -16,7 +16,9 @@ import Rating from "../../components/ui/Rating";
 function MenuItemDetails() {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user);
+  const accessToken = useSelector((state) => state.auth.accessToken);
+  const cartItems = useSelector((state) => state.cart.items);
+  const cartStatus = useSelector((state) => state.cart.status);
 
   const navigate = useNavigate();
   const itemId = parseInt(id);
@@ -24,36 +26,70 @@ function MenuItemDetails() {
   const [quantity, setQuantity] = useState(1);
   const [expanded, setExpanded] = useState(false);
 
+  // ✅ Fetch product
   const {
     data: selectedMenuItem,
     isLoading,
     error,
-    refetch,
-  } = useGetMenuItemByIdQuery(itemId);
+  } = useGetMenuItemByIdQuery(itemId, {
+    skip: !isValidItemId,
+  });
 
-  const handleAddToCart = () => {
-    if (user) {
-      // 🔵 Logged-in → Save in DB
-      dispatch(
-        addToCartAsync({
-          menuItemId: selectedMenuItem.id,
-          quantity: quantity,
-        }),
-      );
-    } else {
-      // 🟢 Guest → Save in localStorage
-      dispatch(
-        addToCartGuest({
-          id: selectedMenuItem.id,
-          name: selectedMenuItem.name,
-          price: selectedMenuItem.price,
-          image: selectedMenuItem.image,
-          quantity: quantity,
-        }),
-      );
+  // ✅ Find if already in cart (AFTER product loaded)
+  const existingCartItem = selectedMenuItem
+    ? cartItems.find(
+        (item) =>
+          item.menuItemId === selectedMenuItem.id ||
+          item.id === selectedMenuItem.id,
+      )
+    : null;
+
+  // ✅ If already in cart → preload quantity
+  useEffect(() => {
+    if (existingCartItem) {
+      setQuantity(existingCartItem.quantity);
+    }
+  }, [existingCartItem]);
+
+  // ✅ Add to cart handler
+  const handleAddToCart = async () => {
+    if (!selectedMenuItem) return;
+
+    // 🚫 Stock validation
+    if (quantity > selectedMenuItem.quantity) {
+      toast.error("Not enough stock available");
+      return;
     }
 
-    toast.success(`${selectedMenuItem.name} added to cart!`);
+    try {
+      if (accessToken) {
+        await dispatch(
+          addToCartAsync({
+            menuItemId: selectedMenuItem.id,
+            quantity,
+          }),
+        ).unwrap();
+      } else {
+        dispatch(
+          addToCartGuest({
+            id: selectedMenuItem.id,
+            name: selectedMenuItem.name,
+            price: selectedMenuItem.price,
+            image: selectedMenuItem.image,
+            quantity,
+          }),
+        );
+      }
+
+      toast.success(`${selectedMenuItem.name} added to cart!`);
+
+      // ✅ NEW: Auto redirect to cart after add
+      setTimeout(() => {
+        navigate(ROUTES.CART);
+      }, 800);
+    } catch (err) {
+      toast.error("Failed to add to cart");
+    }
   };
 
   const handleNotify = (id) => {
@@ -109,7 +145,21 @@ function MenuItemDetails() {
       </div>
     );
   }
+
+  // ========================
+  // UI HELPERS
+  // ========================
+
+  const isOutOfStock = selectedMenuItem.quantity < 1;
+  const maxAllowed = selectedMenuItem.quantity;
+
+  const description = selectedMenuItem.description || "";
+  const isLong = description.length > DESCRIPTION_LIMIT;
+  const visibleText = expanded
+    ? description
+    : description.slice(0, DESCRIPTION_LIMIT);
   //my code
+
   const productUrl = `${window.location.origin}${ROUTES.MENU_DETAIL.replace(
     ":id",
     selectedMenuItem.id,
@@ -126,14 +176,6 @@ function MenuItemDetails() {
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
     productUrl,
   )}`;
-
-  const description = selectedMenuItem?.description || "";
-  const isLong = description.length > DESCRIPTION_LIMIT;
-
-  const visibleText = expanded
-    ? description
-    : description.slice(0, DESCRIPTION_LIMIT);
-  const isOutOfStock = selectedMenuItem.quantity < 1;
 
   //my code ends
   return (
@@ -318,125 +360,64 @@ function MenuItemDetails() {
                 <div className="card border-0">
                   <div className="card-body p-4">
                     <div className="row g-3 align-items-end">
-                      <div className="col-sm-5">
-                        <label className="form-label fw-semibold text-muted small text-uppercase mb-2">
-                          Quantity
-                        </label>
+                      {/* QUANTITY */}
+                      <div className="mt-4">
+                        <label className="form-label">Quantity</label>
                         <div className="input-group">
                           <button
                             className="btn btn-outline-secondary"
-                            type="button"
                             disabled={quantity <= 1}
-                            onClick={() =>
-                              setQuantity(Math.max(1, quantity - 1))
-                            }
+                            onClick={() => setQuantity(quantity - 1)}
                           >
-                            <i className="bi bi-dash"></i>
+                            -
                           </button>
+
                           <input
                             type="number"
-                            className="form-control text-center fw-semibold"
-                            min="1"
-                            max="10"
+                            className="form-control text-center"
                             value={quantity}
+                            min="1"
+                            max={maxAllowed}
                             onChange={(e) =>
                               setQuantity(
                                 Math.max(
                                   1,
-                                  Math.min(10, parseInt(e.target.value) || 1),
+                                  Math.min(
+                                    maxAllowed,
+                                    parseInt(e.target.value) || 1,
+                                  ),
                                 ),
                               )
                             }
                           />
+
                           <button
                             className="btn btn-outline-secondary"
-                            type="button"
-                            disabled={quantity >= 10}
-                            onClick={() =>
-                              setQuantity(Math.min(10, quantity + 1))
-                            }
+                            disabled={quantity >= maxAllowed}
+                            onClick={() => setQuantity(quantity + 1)}
                           >
-                            <i className="bi bi-plus"></i>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="col-sm-7">
-                        <div className="d-grid gap-2">
-                          {isOutOfStock ? (
-                            <>
-                              {/* Out of Stock Label */}
-                              <div className="alert alert-danger text-center fw-semibold mb-2">
-                                🚫 This item is currently out of stock
-                              </div>
-
-                              {/* Notify Me Button */}
-                              <button
-                                className="btn btn-outline-danger btn-lg fw-semibold"
-                                onClick={() =>
-                                  handleNotify(selectedMenuItem.id)
-                                }
-                              >
-                                🔔 Notify me when available
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {/* Add to Cart */}
-                              <button
-                                className="btn btn-primary btn-lg fw-semibold shadow-sm"
-                                onClick={handleAddToCart}
-                              >
-                                <i className="bi bi-cart-plus me-2"></i>
-                                Add to Cart
-                              </button>
-                            </>
-                          )}
-
-                          {/* Continue Shopping always visible */}
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => navigate(ROUTES.HOME)}
-                          >
-                            <i className="bi bi-arrow-left me-2"></i>
-                            Continue Shopping
+                            +
                           </button>
                         </div>
                       </div>
 
-                      {/* <div className="col-sm-7">
-                        <div className="d-grid gap-2">
+                      {/* ADD BUTTON */}
+                      <div className="mt-4">
+                        {isOutOfStock ? (
+                          <div className="alert alert-danger">Out of stock</div>
+                        ) : (
                           <button
-                            className="btn btn-primary btn-lg fw-semibold shadow-sm"
+                            className="btn btn-primary btn-lg w-100"
                             onClick={handleAddToCart}
+                            disabled={cartStatus === "loading"}
                           >
-                            <i className="bi bi-cart-plus me-2"></i>
-                            Add to Cart
+                            {cartStatus === "loading"
+                              ? "Adding..."
+                              : existingCartItem
+                                ? "Update Cart"
+                                : "Add to Cart"}
                           </button>
-
-                          <button
-                            className="btn btn-outline-primary"
-                            onClick={() => navigate(ROUTES.HOME)}
-                          >
-                            <i className="bi bi-arrow-left me-2"></i>
-                            Continue Shopping
-                          </button>
-                        </div>
-                      </div> */}
-                    </div>
-
-                    {/* Total Price Display */}
-                    <div className="mt-3 p-3  rounded border">
-                      <div className="row">
-                        <div className="col-6">
-                          <small className="text-muted">
-                            Subtotal ({quantity} item{quantity == 1 ? "" : "s"})
-                          </small>
-                        </div>
-                        <div className="col-6 text-end">
-                          <span className="fw-bold text-primary h5 mb-0">
-                            ${(selectedMenuItem.price * quantity).toFixed(2)}
-                          </span>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -538,7 +519,13 @@ function MenuItemDetails() {
                     <div className="text-muted text-uppercase fw-semibold small mb-1">
                       Availability
                     </div>
-                    <div className="text-success fw-semibold">In Stock</div>
+                    <div
+                      className={`fw-semibold ${
+                        isOutOfStock ? "text-danger" : "text-success"
+                      }`}
+                    >
+                      {isOutOfStock ? "Out of Stock" : "In Stock"}
+                    </div>{" "}
                   </div>
                 </div>
               </div>

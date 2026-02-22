@@ -3,8 +3,14 @@ import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { API_BASE_URL, ROUTES } from "../../utility/constants";
+// ➕ NEW
+import { mergeCartAsync } from "../../store/slice/cartSlice";
+import { useEffect } from "react";
+import { ROUTES } from "../../utility/constants";
 import { useCreateOrderMutation } from "../../store/api/ordersApi";
+import { API_BASE_URL } from "../../utility/constants";
+// 🔥 ADD
+import { apiFetch } from "../../utility/apiFetch";
 import {
   updateQuantityGuest,
   removeFromCartGuest,
@@ -17,6 +23,8 @@ import {
 function Cart() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  // ✅ NEW — get accessToken directly
+  const { user, accessToken } = useSelector((state) => state.auth);
   const [createOrder, { isLoading }] = useCreateOrderMutation();
   // ➕ NEW
   const [paymentMethod, setPaymentMethod] = useState("COD");
@@ -24,7 +32,7 @@ function Cart() {
 
   const { items, totalAmount, totalItems } = useSelector((state) => state.cart);
 
-  const { user } = useSelector((state) => state.auth);
+  //const { user } = useSelector((state) => state.auth);
   // ✅ UPDATED: Handle quantity differently for guest vs logged-in
   const handleQuantityChange = (id, quantity) => {
     if (quantity < 1) {
@@ -32,7 +40,9 @@ function Cart() {
       return;
     }
 
-    if (user) {
+    //if (user) {
+    if (accessToken) {
+      // 🔥 more reliable than user object
       // 🔵 Logged-in → Update DB
       dispatch(updateQuantityAsync({ menuItemId: id, quantity }));
     } else {
@@ -43,7 +53,8 @@ function Cart() {
 
   // ✅ UPDATED: Remove logic split
   const handleRemoveItem = (id) => {
-    if (user) {
+    // 🔥 UPDATED
+    if (accessToken) {
       dispatch(removeFromCartAsync(id));
     } else {
       dispatch(removeFromCartGuest(id));
@@ -54,10 +65,11 @@ function Cart() {
 
   // ✅ UPDATED: Clear logic split
   const handleClearCart = () => {
-    if (user) {
-      dispatch(clearCartAsync());
+    // 🔥 UPDATED
+    if (accessToken) {
+      dispatch(removeFromCartAsync(id));
     } else {
-      dispatch(clearCartGuest());
+      dispatch(removeFromCartGuest(id));
     }
 
     toast.success("Cart cleared.");
@@ -154,15 +166,19 @@ function Cart() {
       const orderId = orderResult.result.orderHeaderId;
 
       // 2️⃣ Create Razorpay order linked to OrderHeaderId
-      const res = await fetch(`${API_BASE_URL}/api/payments/razorpay/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: totalAmount,
-          orderHeaderId: orderId,
-        }),
-      });
+      // ✅ CHANGED to apiFetch
+      // ✅ PASS TOKEN
+      const res = await apiFetch(
+        "/api/payments/razorpay/create",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            amount: totalAmount,
+            orderHeaderId: orderId,
+          }),
+        },
+        accessToken, // ✅ added
+      );
 
       // const token = user?.token;
 
@@ -184,6 +200,9 @@ function Cart() {
         toast.error("Failed to create Razorpay order");
         return;
       }
+
+      // ✅ FIXED: you forgot this
+      const data = await res.json();
 
       const options = {
         key: data.key,
@@ -209,12 +228,11 @@ function Cart() {
 
   // ➕ NEW
   const verifyPayment = async (paymentResponse, orderHeaderId) => {
-    const verifyRes = await fetch(
-      `${API_BASE_URL}/api/payments/razorpay/verify`,
+    // ✅ PASS TOKEN
+    const verifyRes = await apiFetch(
+      "/api/payments/razorpay/verify",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           razorpay_payment_id: paymentResponse.razorpay_payment_id,
           razorpay_order_id: paymentResponse.razorpay_order_id,
@@ -222,6 +240,7 @@ function Cart() {
           orderHeaderId,
         }),
       },
+      accessToken, // ✅ added
     );
 
     if (!verifyRes.ok) {

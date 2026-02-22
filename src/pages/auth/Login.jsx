@@ -6,6 +6,8 @@ import { toast } from "react-toastify";
 import { setAuth } from "../../store/slice/authSlice";
 // ➕ NEW: import cart fetch action
 import { fetchCartAsync } from "../../store/slice/cartSlice";
+import { mergeCartAsync } from "../../store/slice/cartSlice";
+import { apiFetch } from "../../utility/apiFetch";
 import { useDispatch } from "react-redux";
 import { getUserInfoFromToken } from "../../utility/jwtUtility";
 function Login() {
@@ -43,31 +45,20 @@ function Login() {
       dispatch(setAuth({ user, token }));
 
       // ==============================
-      // ➕ NEW: Merge guest cart to DB
+      // ✅ MERGE USING REDUX THUNK
       // ==============================
       try {
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/cart/merge`, {
-          method: "POST",
-          credentials: "include",
-        });
-
-        // Remove guest cart from localStorage
-        localStorage.removeItem("cart-mango");
-
-        // Fetch updated DB cart
-        dispatch(fetchCartAsync());
-      } catch (mergeError) {
-        console.warn("Cart merge failed:", mergeError);
+        await dispatch(mergeCartAsync()).unwrap();
+      } catch (err) {
+        console.warn("Cart merge failed:", err);
       }
-      // ==============================
-
       const from = location.state?.from || ROUTES.HOME;
       navigate(from, { replace: true });
     } catch (error) {
       if (error.status === 401) {
         toast.error("Invalid credentials");
       } else {
-        toast.error("Internal server error. Please try again shortly.");
+        toast.error("Some error occured. Please try again shortly.");
       }
     }
   };

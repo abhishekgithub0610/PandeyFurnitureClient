@@ -11,7 +11,8 @@ import Rating from "../components/ui/Rating";
 import Carousel from "../components/ui/Carousel";
 function Home() {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user); // adjust if different
+  //const user = useSelector((state) => state.auth.user); // adjust if different
+  const { user, accessToken } = useSelector((state) => state.auth);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -22,7 +23,7 @@ function Home() {
     refetch,
   } = useGetMenuItemsQuery();
   const handleAddToCart = (item) => {
-    if (user) {
+    if (user && accessToken) {
       // 🔵 LOGGED-IN USER → Save in DB
       dispatch(
         addToCartAsync({

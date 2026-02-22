@@ -2,6 +2,8 @@ import { ROLES, ROUTES } from "../../utility/constants";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { logout } from "../../store/slice/authSlice";
+// ✅ IMPORT resetCart
+import { resetCart } from "../../store/slice/cartSlice";
 import { toggleTheme } from "../../store/slice/themeSlice";
 import {
   useGetCurrentUserQuery,
@@ -14,7 +16,7 @@ function Header() {
   //my code
   // // const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { user, isAuthenticated, isLoading } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
   //my code ends
 
@@ -30,7 +32,13 @@ function Header() {
       console.error("Logout failed", err);
     }
     //my code
+    // ✅ FIRST: clear auth state
     dispatch(logout());
+
+    // ✅ SECOND: reset cart to 0 (Redux + localStorage cleared)
+    dispatch(resetCart());
+
+    // ✅ THIRD: navigate home
     navigate("/");
     //my code ends
   };

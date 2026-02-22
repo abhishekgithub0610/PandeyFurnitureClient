@@ -2,13 +2,15 @@ import AppRoutes from "./routes/AppRouter";
 import Header from "./components/layout/Header";
 import { LoadScript } from "@react-google-maps/api";
 import Footer from "./components/layout/Footer";
-import { useSelector } from "react-redux";
 import { VITE_GOOGLE_MAPS_API_KEY } from "./utility/constants";
 import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCartAsync, hydrateGuestCart } from "./store/slice/cartSlice";
 function App() {
   const theme = useSelector((state) => state.theme.theme);
-
+  const dispatch = useDispatch();
+  const accessToken = useSelector((state) => state.auth?.accessToken);
   const getThemeStyles = () => {
     if (theme === "dark") {
       return {
@@ -24,7 +26,22 @@ function App() {
   useEffect(() => {
     document.body.setAttribute("data-bs-theme", theme);
   }, [theme]);
+  // 🔥 NEW: Always fetch DB cart if user is logged in
+  useEffect(() => {
+    if (accessToken) {
+      dispatch(fetchCartAsync());
+    }
+  }, [accessToken, dispatch]);
 
+  useEffect(() => {
+    if (!accessToken) {
+      const stored = JSON.parse(localStorage.getItem("cart-mango") || "[]");
+
+      if (stored.length) {
+        dispatch(hydrateGuestCart(stored));
+      }
+    }
+  }, [accessToken, dispatch]);
   return (
     <LoadScript
       googleMapsApiKey={VITE_GOOGLE_MAPS_API_KEY}

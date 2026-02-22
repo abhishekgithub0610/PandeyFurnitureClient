@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_BASE_URL } from "../../utility/constants";
-
+// 🔥 ADD THIS
+import { apiFetch } from "../../utility/apiFetch";
 const STORAGE_KEY_CART = "cart-mango";
 
 /* =========================================================
@@ -45,18 +46,23 @@ const calculateTotals = (items = []) => {
 // ➕ ADD ITEM (DB)
 export const addToCartAsync = createAsyncThunk(
   "cart/addToCartAsync",
-  async ({ menuItemId, quantity }, { rejectWithValue }) => {
+  async ({ menuItemId, quantity }, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuItemId, quantity }),
-      });
+      // ✅ GET TOKEN FROM REDUX
+      const token = getState().auth?.accessToken;
+
+      const response = await apiFetch(
+        "/api/cart/add",
+        {
+          method: "POST",
+          body: JSON.stringify({ menuItemId, quantity }),
+        },
+        token, // ✅ PASS TOKEN HERE
+      );
 
       if (!response.ok) throw new Error("Failed to add item");
 
-      return await response.json(); // backend returns full cart
+      return await response.json();
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -66,14 +72,18 @@ export const addToCartAsync = createAsyncThunk(
 // ➕ UPDATE QUANTITY (DB)  🔥 NEW
 export const updateQuantityAsync = createAsyncThunk(
   "cart/updateQuantityAsync",
-  async ({ menuItemId, quantity }, { rejectWithValue }) => {
+  async ({ menuItemId, quantity }, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuItemId, quantity }),
-      });
+      const token = getState().auth?.accessToken;
+
+      const response = await apiFetch(
+        "/api/cart/update",
+        {
+          method: "PUT",
+          body: JSON.stringify({ menuItemId, quantity }),
+        },
+        token,
+      );
 
       if (!response.ok) throw new Error("Failed to update quantity");
 
@@ -87,14 +97,14 @@ export const updateQuantityAsync = createAsyncThunk(
 // ➕ REMOVE ITEM (DB) 🔥 NEW
 export const removeFromCartAsync = createAsyncThunk(
   "cart/removeFromCartAsync",
-  async (menuItemId, { rejectWithValue }) => {
+  async (menuItemId, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/cart/remove/${menuItemId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
+      const token = getState().auth?.accessToken;
+
+      const response = await apiFetch(
+        `/api/cart/remove/${menuItemId}`,
+        { method: "DELETE" },
+        token,
       );
 
       if (!response.ok) throw new Error("Failed to remove item");
@@ -109,12 +119,15 @@ export const removeFromCartAsync = createAsyncThunk(
 // ➕ CLEAR CART (DB) 🔥 NEW
 export const clearCartAsync = createAsyncThunk(
   "cart/clearCartAsync",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/clear`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const token = getState().auth?.accessToken;
+
+      const response = await apiFetch(
+        "/api/cart/clear",
+        { method: "DELETE" },
+        token,
+      );
 
       if (!response.ok) throw new Error("Failed to clear cart");
 
@@ -128,11 +141,11 @@ export const clearCartAsync = createAsyncThunk(
 // ➕ FETCH FULL CART
 export const fetchCartAsync = createAsyncThunk(
   "cart/fetchCartAsync",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart`, {
-        credentials: "include",
-      });
+      const token = getState().auth?.accessToken;
+
+      const response = await apiFetch("/api/cart", {}, token);
 
       if (!response.ok) throw new Error("Failed to fetch cart");
 
@@ -143,17 +156,62 @@ export const fetchCartAsync = createAsyncThunk(
   },
 );
 
+// ➕ MERGE GUEST CART AFTER LOGIN (NEW)
+export const mergeCartAsync = createAsyncThunk(
+  "cart/mergeCartAsync",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth?.accessToken;
+
+      // 🔥 Get guest cart from localStorage
+      const guestCart = getStoredCart();
+
+      if (!guestCart.length) return { items: [] };
+
+      // 🔥 Convert to backend DTO format
+      const mergePayload = {
+        items: guestCart.map((item) => ({
+          menuItemId: item.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      const response = await apiFetch(
+        "/api/cart/merge",
+        {
+          method: "POST",
+          body: JSON.stringify(mergePayload),
+        },
+        token,
+      );
+
+      if (!response.ok) throw new Error("Failed to merge cart");
+
+      const data = await response.json();
+
+      // 🔥 Clear guest localStorage AFTER successful merge
+      localStorage.removeItem(STORAGE_KEY_CART);
+
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
 /* =========================================================
    🟣 SLICE
 ========================================================= */
 
-const initialItems = getStoredCart();
+//const initialItems = getStoredCart();
 
+// 🔥 CHANGE: Do NOT automatically trust localStorage
+// We start empty and decide later based on auth state
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
-    items: initialItems,
-    ...calculateTotals(initialItems),
+    items: [], // 🔥 Start empty always
+    totalItems: 0,
+    totalAmount: 0,
     loading: false,
     error: null,
   },
@@ -209,6 +267,22 @@ const cartSlice = createSlice({
       state.totalItems = 0;
       localStorage.removeItem(STORAGE_KEY_CART);
     },
+    // ✅ NEW: Reset cart completely (used on logout)
+    resetCart: (state) => {
+      state.items = [];
+      state.totalAmount = 0;
+      state.totalItems = 0;
+      state.loading = false;
+      state.error = null;
+
+      // ✅ Remove guest cart storage
+      localStorage.removeItem(STORAGE_KEY_CART);
+    },
+    // 🔥 NEW: Hydrate guest cart from localStorage (clean load)
+    hydrateGuestCart: (state, action) => {
+      state.items = action.payload || [];
+      Object.assign(state, calculateTotals(state.items));
+    },
   },
 
   /* =========================================================
@@ -239,8 +313,12 @@ const cartSlice = createSlice({
         (state, action) => {
           state.loading = false;
 
-          // 🔥 Always trust backend cart
-          state.items = action.payload?.items || action.payload || [];
+          // 🔥 CHANGE:
+          // Always normalize backend response safely
+          const backendItems = action.payload?.items || action.payload || [];
+
+          state.items = Array.isArray(backendItems) ? backendItems : [];
+
           Object.assign(state, calculateTotals(state.items));
         },
       );
@@ -252,6 +330,8 @@ export const {
   updateQuantityGuest,
   removeFromCartGuest,
   clearCartGuest,
+  resetCart,
+  hydrateGuestCart,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
