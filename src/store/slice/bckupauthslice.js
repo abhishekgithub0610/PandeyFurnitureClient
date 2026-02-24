@@ -54,8 +54,12 @@ const getInitialAuthState = () => {
     };
   }
 
+  //pending (uncomment and use commented code)
   const user = getUserInfoFromToken(token);
-
+  // const { data: user } = await dispatch(
+  //   authApi.endpoints.getCurrentUser.initiate(),
+  // );
+  // pending ends
   return {
     user,
     accessToken: token,

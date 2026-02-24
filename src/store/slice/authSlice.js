@@ -4,7 +4,10 @@ const initialState = {
   user: null,
   accessToken: "",
   isAuthenticated: false,
-  isLoading: true, // Start as true to prevent UI flickering
+  //change 25 feb
+  isLoading: false, // Start as true to prevent UI flickering
+  //isLoading: true, // Start as true to prevent UI flickering
+  //change 25 feb ends
 };
 
 const authSlice = createSlice({

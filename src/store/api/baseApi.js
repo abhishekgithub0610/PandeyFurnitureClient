@@ -15,43 +15,92 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+// 🔐 ADDED: shared refresh promise to prevent multiple refresh calls
+let refreshPromise = null;
+
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // 🔴 401 Unauthorized - Access Token likely expired
+  // 🔴 Access token expired
   if (result?.error?.status === 401) {
-    // Avoid infinite loops if the refresh call itself is unauthorized
+    // ❌ Prevent infinite loop if refresh itself fails
     if (args.url === "auth/refresh") {
       api.dispatch(logout());
       return result;
     }
 
-    // 🔄 Attempt to get a new Access Token using the HttpOnly Refresh Cookie
-    const refreshResult = await baseQuery(
-      { url: "auth/refresh", method: "POST" },
-      api,
-      extraOptions,
-    );
+    try {
+      // 🔐 ADDED: prevent multiple refresh calls
+      if (!refreshPromise) {
+        refreshPromise = baseQuery(
+          { url: "auth/refresh", method: "POST" },
+          api,
+          extraOptions,
+        );
+      }
 
-    // Check your backend response structure (result.accessToken vs data.accessToken)
-    const newToken =
-      refreshResult?.data?.result?.accessToken ||
-      refreshResult?.data?.accessToken;
+      const refreshResult = await refreshPromise;
+      refreshPromise = null; // reset
 
-    if (newToken) {
-      // ✅ Update Redux memory with the new short-lived token
-      api.dispatch(setAccessToken(newToken));
+      const newToken =
+        refreshResult?.data?.accessToken ||
+        refreshResult?.data?.result?.accessToken;
 
-      // 🔁 Retry the original failed request with the new token
-      result = await baseQuery(args, api, extraOptions);
-    } else {
-      // 🚨 Refresh failed (cookie expired or invalid) -> Clear state
+      if (newToken) {
+        // ✅ Update access token in memory
+        api.dispatch(setAccessToken(newToken));
+
+        // 🔁 Retry original request
+        result = await baseQuery(args, api, extraOptions);
+      } else {
+        // 🚨 Refresh failed (revoked / replay / expired)
+        api.dispatch(logout());
+      }
+    } catch (err) {
+      refreshPromise = null;
       api.dispatch(logout());
     }
   }
 
   return result;
 };
+// const baseQueryWithReauth = async (args, api, extraOptions) => {
+//   let result = await baseQuery(args, api, extraOptions);
+
+//   // 🔴 401 Unauthorized - Access Token likely expired
+//   if (result?.error?.status === 401) {
+//     // Avoid infinite loops if the refresh call itself is unauthorized
+//     if (args.url === "auth/refresh") {
+//       api.dispatch(logout());
+//       return result;
+//     }
+
+//     // 🔄 Attempt to get a new Access Token using the HttpOnly Refresh Cookie
+//     const refreshResult = await baseQuery(
+//       { url: "auth/refresh", method: "POST" },
+//       api,
+//       extraOptions,
+//     );
+
+//     // Check your backend response structure (result.accessToken vs data.accessToken)
+//     const newToken =
+//       refreshResult?.data?.result?.accessToken ||
+//       refreshResult?.data?.accessToken;
+
+//     if (newToken) {
+//       // ✅ Update Redux memory with the new short-lived token
+//       api.dispatch(setAccessToken(newToken));
+
+//       // 🔁 Retry the original failed request with the new token
+//       result = await baseQuery(args, api, extraOptions);
+//     } else {
+//       // 🚨 Refresh failed (cookie expired or invalid) -> Clear state
+//       api.dispatch(logout());
+//     }
+//   }
+
+//   return result;
+// };
 
 export const baseApi = createApi({
   reducerPath: "api",

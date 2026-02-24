@@ -38,9 +38,17 @@ function Login() {
     try {
       const result = await loginUser(formData).unwrap();
 
-      const token = result.result.accessToken;
+      // 🔁 UPDATED: safer extraction
+      const token = result?.accessToken || result?.result?.accessToken;
+      if (!token) {
+        throw new Error("Invalid login response");
+      }
+      //pending (uncomment and use commented code)
       const user = getUserInfoFromToken(token);
-
+      // const { data: user } = await dispatch(
+      //   authApi.endpoints.getCurrentUser.initiate(),
+      // );
+      // pending ends
       toast.success("Login successful.");
       dispatch(setAuth({ user, token }));
 

@@ -29,8 +29,12 @@ const AuthInitializer = ({ children }) => {
           dispatch(logout());
           return;
         }
-
+        //pending (uncomment and use commented code)
         const user = getUserInfoFromToken(token);
+        // const { data: user } = await dispatch(
+        //   authApi.endpoints.getCurrentUser.initiate(),
+        // );
+        // pending ends
         dispatch(setAuth({ user, token }));
       } catch (err) {
         console.error("Auth restore error:", err);
